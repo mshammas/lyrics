@@ -50,14 +50,27 @@ export function usePinchZoom(
       setTimeout(() => { isPinchingRef.current = false }, 300)
     }
 
+    function onWheel(e: WheelEvent) {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      const delta = e.deltaY > 0 ? -1 : 1
+      // Update fontRef immediately so rapid scrolling accumulates correctly
+      fontRef.current = Math.round(
+        Math.min(MAX_FONT, Math.max(MIN_FONT, fontRef.current + delta))
+      )
+      onChangeRef.current(fontRef.current)
+    }
+
     el.addEventListener('touchstart', onStart, { passive: true })
     el.addEventListener('touchmove', onMove, { passive: false })
     el.addEventListener('touchend', onEnd)
+    el.addEventListener('wheel', onWheel, { passive: false })
 
     return () => {
       el.removeEventListener('touchstart', onStart)
       el.removeEventListener('touchmove', onMove)
       el.removeEventListener('touchend', onEnd)
+      el.removeEventListener('wheel', onWheel)
     }
   }, [containerRef])
 
