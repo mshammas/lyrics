@@ -82,10 +82,8 @@ export default function AutoView({ lines, activeIndex, fontSize, onFontChange, o
             <div
               key={i}
               ref={isActive ? activeRef : undefined}
-              className={`px-5 py-1 rounded-sm transition-all duration-300 ${getOpacity(delta)} ${
-                isActive
-                  ? 'border-l-[3px] border-violet-500 bg-white/[0.06] !pl-4 font-semibold'
-                  : ''
+              className={`px-5 py-1 rounded-sm transition-all duration-300 text-center ${getOpacity(delta)} ${
+                isActive ? 'bg-white/[0.06] font-semibold' : ''
               }`}
               style={{
                 fontSize: `${fontSize * getFontScale(delta)}px`,

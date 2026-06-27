@@ -59,6 +59,14 @@ declare global {
   }
 }
 
+// Minimum words needed in the rolling transcript before attempting a match.
+// Prevents single stray words (music bleed, noise) from cascading advances.
+const MIN_WORDS_TO_MATCH = 3
+
+// After matching a line, ignore further matches for this many ms.
+// Prevents the next interim STT result from immediately triggering another advance.
+const MATCH_COOLDOWN_MS = 1200
+
 export function startSTT(
   currentLineIndex: number,
   opts: STTOptions
@@ -73,12 +81,13 @@ export function startSTT(
   rec.lang = LANGUAGE_BCP47[opts.language]
   rec.continuous = true
   rec.interimResults = true
-  rec.maxAlternatives = 3
+  rec.maxAlternatives = 1
 
   let activeIndex = currentLineIndex
   let transcript = ''
   let stallTimer: ReturnType<typeof setTimeout> | null = null
   let stopped = false
+  let cooldownUntil = 0
 
   const resetStallTimer = () => {
     if (stallTimer) clearTimeout(stallTimer)
@@ -91,18 +100,28 @@ export function startSTT(
     let interim = ''
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const r = event.results[i]
-      const text = Array.from({ length: r.length }, (_, j) => r[j].transcript).join(' ')
+      // Use only the most confident alternative (index 0)
+      const text = r[0].transcript
       if (r.isFinal) {
         transcript += ' ' + text
-        const words = transcript.split(' ')
+        const words = transcript.trim().split(/\s+/)
         if (words.length > 40) transcript = words.slice(-20).join(' ')
       } else {
         interim = text
       }
     }
-    opts.onTranscript?.(interim || transcript)
+    opts.onTranscript?.(interim || transcript.trim())
+
+    // Don't attempt matching if we're in the post-match cooldown
+    if (Date.now() < cooldownUntil) return
 
     const combined = (transcript + ' ' + interim).trim()
+
+    // Require a minimum number of meaningful words before attempting a match.
+    // Single stray words from music or noise should never advance the line.
+    const wordCount = combined.split(/\s+/).filter(w => w.length > 1).length
+    if (wordCount < MIN_WORDS_TO_MATCH) return
+
     const lookAhead = opts.lines.slice(
       activeIndex + 1,
       activeIndex + 1 + (opts.lookAheadWindow ?? 4)
@@ -112,6 +131,7 @@ export function startSTT(
       activeIndex = activeIndex + 1 + rel
       opts.onLineMatch(activeIndex)
       transcript = ''
+      cooldownUntil = Date.now() + MATCH_COOLDOWN_MS
       resetStallTimer()
     }
   }
