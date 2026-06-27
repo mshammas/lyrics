@@ -330,7 +330,29 @@ export default function SongForm({ song }: Props) {
       </div>
 
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>
+        <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg space-y-1.5">
+          <p>{error}</p>
+          {error.startsWith('No lyrics found') && title && (
+            <div className="flex flex-wrap gap-2 pt-0.5">
+              <a
+                href={`https://www.google.com/search?q=${encodeURIComponent(`${title}${artist ? ' ' + artist : ''} lyrics`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-violet-500 hover:underline text-xs"
+              >
+                Search Google for lyrics →
+              </a>
+              <a
+                href={`https://genius.com/search?q=${encodeURIComponent(`${title}${artist ? ' ' + artist : ''}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-violet-500 hover:underline text-xs"
+              >
+                Search Genius →
+              </a>
+            </div>
+          )}
+        </div>
       )}
 
       <div className="flex gap-3">
