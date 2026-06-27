@@ -40,6 +40,7 @@ async function fetchLrcLib(title: string, artist: string): Promise<LyricsSource 
     trackName: string
     artistName: string
     albumName?: string
+    releaseDate?: string
     plainLyrics?: string
     syncedLyrics?: string
   }[] = await res.json()
@@ -49,11 +50,14 @@ async function fetchLrcLib(title: string, artist: string): Promise<LyricsSource 
   const raw = best.plainLyrics ?? ''
   if (!raw) return null
 
+  const year = best.releaseDate ? parseInt(best.releaseDate.slice(0, 4)) || undefined : undefined
+
   return {
     name: 'LrcLib',
     lyrics: raw.trim(),
     credits: `${best.trackName} · ${best.artistName}`,
     ...(best.albumName ? { movie: best.albumName } : {}),
+    ...(year ? { year } : {}),
     confidence: 85,
   }
 }
@@ -73,6 +77,37 @@ async function fetchOvhMusixmatch(title: string, artist: string): Promise<Lyrics
   }
 }
 
+function buildBestMatch(sources: LyricsSource[]): LyricsSource | null {
+  if (sources.length < 2) return null
+
+  // Prefer higher confidence, then longer lyrics as tiebreaker
+  const ranked = [...sources].sort((a, b) => {
+    const c = (b.confidence ?? 0) - (a.confidence ?? 0)
+    return c !== 0 ? c : b.lyrics.length - a.lyrics.length
+  })
+
+  const best = ranked[0]
+
+  // Merge best available metadata from all sources
+  const movie = sources.find(s => s.movie)?.movie
+  const year = sources.find(s => s.year)?.year
+  const credits = sources.find(s => s.credits)?.credits
+
+  // Skip the merged entry if it's identical to the best source
+  const unchanged =
+    movie === best.movie && year === best.year && credits === best.credits
+  if (unchanged) return null
+
+  return {
+    name: 'Best match',
+    lyrics: best.lyrics,
+    credits: credits ?? best.credits,
+    movie: movie ?? best.movie,
+    year: year ?? best.year,
+    confidence: best.confidence,
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const title = searchParams.get('title') ?? ''
@@ -88,11 +123,14 @@ export async function GET(req: NextRequest) {
     fetchGenius(title, artist),
   ])
 
-  const sources: LyricsSource[] = [
+  const individual: LyricsSource[] = [
     lrclib.status === 'fulfilled' && lrclib.value ? lrclib.value : null,
     ovh.status === 'fulfilled' && ovh.value ? ovh.value : null,
     genius.status === 'fulfilled' && genius.value ? genius.value : null,
   ].filter((s): s is LyricsSource => s !== null && s.lyrics.length > 0)
+
+  const merged = buildBestMatch(individual)
+  const sources = merged ? [merged, ...individual] : individual
 
   return NextResponse.json({ sources })
 }
