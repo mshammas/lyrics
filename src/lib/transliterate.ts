@@ -14,6 +14,7 @@ const ITCODE: Record<Language, string | null> = {
   hi: 'hi-t-i0-und',
   ml: 'ml-t-i0-und',
   kn: 'kn-t-i0-und',
+  other: null,
 }
 
 // Unicode ranges for each script

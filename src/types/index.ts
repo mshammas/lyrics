@@ -1,4 +1,4 @@
-export type Language = 'en' | 'hi' | 'ml' | 'kn'
+export type Language = 'en' | 'hi' | 'ml' | 'kn' | 'other'
 
 export type LyricsDisplay = 'original' | 'transliteration' | 'both'
 
@@ -29,6 +29,7 @@ export const LANGUAGE_LABELS: Record<Language, string> = {
   hi: 'Hindi',
   ml: 'Malayalam',
   kn: 'Kannada',
+  other: 'Other',
 }
 
 export const LANGUAGE_BCP47: Record<Language, string> = {
@@ -36,6 +37,7 @@ export const LANGUAGE_BCP47: Record<Language, string> = {
   hi: 'hi-IN',
   ml: 'ml-IN',
   kn: 'kn-IN',
+  other: 'en-US',
 }
 
 export const LANGUAGE_BADGE: Record<Language, string> = {
@@ -43,6 +45,7 @@ export const LANGUAGE_BADGE: Record<Language, string> = {
   hi: 'HI',
   ml: 'ML',
   kn: 'KN',
+  other: '•••',
 }
 
 export function slugify(title: string): string {

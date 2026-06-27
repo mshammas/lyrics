@@ -113,7 +113,7 @@ export default function PlayerShell({ song }: Props) {
     }
   }, [autoMode]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasTranslit = !!song.lyricsRoman && song.language !== 'en'
+  const hasTranslit = !!song.lyricsRoman && song.language !== 'en' && song.language !== 'other'
 
   const darkHeader = autoMode
     ? 'border-white/8 bg-[#1a1a26]'

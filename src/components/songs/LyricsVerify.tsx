@@ -15,7 +15,7 @@ export default function LyricsVerify({ sources, language, onSelect, onCancel }: 
   const [active, setActive] = useState(0)
 
   const src = sources[active]
-  const scriptType = src && language !== 'en'
+  const scriptType = src && language !== 'en' && language !== 'other'
     ? detectScript(src.lyrics, language)
     : null
 

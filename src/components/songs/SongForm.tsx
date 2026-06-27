@@ -10,7 +10,7 @@ import type { Song, Language, LyricsDisplay, LyricsSource } from '@/types'
 import { LANGUAGE_LABELS, songPath } from '@/types'
 import type { SongCandidate } from '@/app/api/songs/search/route'
 
-const LANGUAGES: Language[] = ['en', 'hi', 'ml', 'kn']
+const LANGUAGES: Language[] = ['en', 'hi', 'ml', 'kn', 'other']
 const DISPLAY_OPTIONS: { value: LyricsDisplay; label: string }[] = [
   { value: 'original', label: 'Original script' },
   { value: 'transliteration', label: 'Transliteration (Roman)' },
@@ -40,7 +40,7 @@ export default function SongForm({ song }: Props) {
   const [savingStep, setSavingStep] = useState('')
   const [error, setError] = useState('')
 
-  const scriptType = lyrics.trim() && language !== 'en'
+  const scriptType = lyrics.trim() && language !== 'en' && language !== 'other'
     ? detectScript(lyrics, language)
     : null
 
@@ -124,7 +124,7 @@ export default function SongForm({ song }: Props) {
       let finalLyrics = lyrics.trim()
       let lyricsRoman: string | undefined
 
-      if (language !== 'en') {
+      if (language !== 'en' && language !== 'other') {
         const script = detectScript(finalLyrics, language)
 
         if (script === 'roman') {
