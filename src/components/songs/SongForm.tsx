@@ -35,6 +35,7 @@ export default function SongForm({ song }: Props) {
   const [year, setYear] = useState(song?.year ? String(song.year) : '')
   const [musicDirector, setMusicDirector] = useState(song?.musicDirector ?? '')
   const [lyricist, setLyricist] = useState(song?.lyricist ?? '')
+  const [pendingMeta, setPendingMeta] = useState<{ movie?: string; year?: number } | null>(null)
   const [fetching, setFetching] = useState(false)
   const [candidates, setCandidates] = useState<SongCandidate[]>([])
   const [showPicker, setShowPicker] = useState(false)
@@ -92,6 +93,15 @@ export default function SongForm({ song }: Props) {
         setFetching(false)
         return
       }
+      if (matched.length === 1) {
+        // Single unambiguous match — stash album/year to apply after lyrics are confirmed
+        const c = matched[0]
+        if (!artist.trim()) setArtist(c.artist)
+        setPendingMeta({
+          movie: c.album || undefined,
+          year: c.year,
+        })
+      }
     } catch {
       // If the search step fails, fall through to lyrics fetch anyway
     }
@@ -102,20 +112,30 @@ export default function SongForm({ song }: Props) {
   const handlePickerSelect = async (candidate: SongCandidate) => {
     setShowPicker(false)
     setCandidates([])
+    setPendingMeta(null)
     setTitle(candidate.title)
     setArtist(candidate.artist)
+    if (candidate.album && !movie.trim()) setMovie(candidate.album)
+    if (candidate.year && !year.trim()) setYear(String(candidate.year))
     await doFetchLyrics(candidate.title, candidate.artist)
   }
 
   const handlePickerSkip = async () => {
     setShowPicker(false)
     setCandidates([])
+    setPendingMeta(null)
     await doFetchLyrics(title, artist)
   }
 
   const handleVerifySelect = (source: LyricsSource) => {
     setLyrics(source.lyrics)
     if (source.credits) setCredits(source.credits)
+    // Prefer source metadata, fall back to iTunes stash
+    const resolvedMovie = source.movie || pendingMeta?.movie
+    const resolvedYear = source.year || pendingMeta?.year
+    if (resolvedMovie && !movie.trim()) setMovie(resolvedMovie)
+    if (resolvedYear && !year.trim()) setYear(String(resolvedYear))
+    setPendingMeta(null)
     setShowVerify(false)
     setSources([])
   }
@@ -132,11 +152,12 @@ export default function SongForm({ song }: Props) {
         return
       }
       if (data.lyrics) setLyrics(data.lyrics)
+      if (data.title && !title.trim()) setTitle(data.title)
       if (data.artist && !artist.trim()) setArtist(data.artist)
-      if (data.movie) setMovie(data.movie)
-      if (data.year) setYear(String(data.year))
-      if (data.musicDirector) setMusicDirector(data.musicDirector)
-      if (data.lyricist) setLyricist(data.lyricist)
+      if (data.movie && !movie.trim()) setMovie(data.movie)
+      if (data.year && !year.trim()) setYear(String(data.year))
+      if (data.musicDirector && !musicDirector.trim()) setMusicDirector(data.musicDirector)
+      if (data.lyricist && !lyricist.trim()) setLyricist(data.lyricist)
       setScrapeUrl('')
       setError('')
     } catch {

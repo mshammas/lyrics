@@ -26,6 +26,8 @@ export interface LyricsSource {
   credits?: string
   url?: string
   confidence?: number     // 0-100 match quality indicator
+  movie?: string          // album / film name from the source
+  year?: number           // release year from the source
 }
 
 export const LANGUAGE_LABELS: Record<Language, string> = {

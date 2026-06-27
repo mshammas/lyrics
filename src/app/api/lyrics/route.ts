@@ -39,6 +39,7 @@ async function fetchLrcLib(title: string, artist: string): Promise<LyricsSource 
   const results: {
     trackName: string
     artistName: string
+    albumName?: string
     plainLyrics?: string
     syncedLyrics?: string
   }[] = await res.json()
@@ -52,6 +53,7 @@ async function fetchLrcLib(title: string, artist: string): Promise<LyricsSource 
     name: 'LrcLib',
     lyrics: raw.trim(),
     credits: `${best.trackName} · ${best.artistName}`,
+    ...(best.albumName ? { movie: best.albumName } : {}),
     confidence: 85,
   }
 }

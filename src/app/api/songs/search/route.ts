@@ -5,6 +5,7 @@ export interface SongCandidate {
   title: string
   artist: string
   album: string
+  year?: number
   artwork?: string
 }
 
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
         trackName: string
         artistName: string
         collectionName: string
+        releaseDate?: string
         artworkUrl100?: string
       }[]
     } = await res.json()
@@ -45,11 +47,13 @@ export async function GET(req: NextRequest) {
       const key = `${r.artistName.toLowerCase()}|${r.trackName.toLowerCase()}`
       if (seen.has(key)) continue
       seen.add(key)
+      const releaseYear = r.releaseDate ? new Date(r.releaseDate).getFullYear() : undefined
       candidates.push({
         id: r.trackId,
         title: r.trackName,
         artist: r.artistName,
         album: r.collectionName,
+        year: releaseYear && releaseYear >= 1930 ? releaseYear : undefined,
         artwork: r.artworkUrl100,
       })
     }
