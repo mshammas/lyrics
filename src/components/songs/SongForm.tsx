@@ -31,6 +31,10 @@ export default function SongForm({ song }: Props) {
   const [lyricsDisplay, setLyricsDisplay] = useState<LyricsDisplay>(song?.lyricsDisplay ?? 'original')
   const [lyrics, setLyrics] = useState(song?.lyrics ?? '')
   const [credits, setCredits] = useState(song?.credits ?? '')
+  const [movie, setMovie] = useState(song?.movie ?? '')
+  const [year, setYear] = useState(song?.year ? String(song.year) : '')
+  const [musicDirector, setMusicDirector] = useState(song?.musicDirector ?? '')
+  const [lyricist, setLyricist] = useState(song?.lyricist ?? '')
   const [fetching, setFetching] = useState(false)
   const [candidates, setCandidates] = useState<SongCandidate[]>([])
   const [showPicker, setShowPicker] = useState(false)
@@ -148,30 +152,25 @@ export default function SongForm({ song }: Props) {
 
       setSavingStep('Saving…')
       const now = Date.now()
+      const yearNum = year.trim() ? Number(year.trim()) : undefined
+      const meta = {
+        title: title.trim(),
+        artist: artist.trim(),
+        language,
+        lyricsDisplay,
+        lyrics: finalLyrics,
+        lyricsRoman,
+        credits: credits.trim(),
+        movie: movie.trim() || undefined,
+        year: yearNum && Number.isFinite(yearNum) ? yearNum : undefined,
+        musicDirector: musicDirector.trim() || undefined,
+        lyricist: lyricist.trim() || undefined,
+      }
       if (isEdit && song.id != null) {
-        await db.songs.update(song.id, {
-          title: title.trim(),
-          artist: artist.trim(),
-          language,
-          lyricsDisplay,
-          lyrics: finalLyrics,
-          lyricsRoman,
-          credits: credits.trim(),
-          updatedAt: now,
-        })
+        await db.songs.update(song.id, { ...meta, updatedAt: now })
         router.push(songPath(song.id!, title.trim()))
       } else {
-        const id = await db.songs.add({
-          title: title.trim(),
-          artist: artist.trim(),
-          language,
-          lyricsDisplay,
-          lyrics: finalLyrics,
-          lyricsRoman,
-          credits: credits.trim(),
-          createdAt: now,
-          updatedAt: now,
-        })
+        const id = await db.songs.add({ ...meta, createdAt: now, updatedAt: now })
         router.push(songPath(id as number, title.trim()))
       }
     } catch {
@@ -327,6 +326,49 @@ export default function SongForm({ song }: Props) {
           placeholder="e.g. Music: Mithoon · Lyrics: Mithoon · Film: Aashiqui 2"
           className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
         />
+      </div>
+
+      <div className="space-y-3 pt-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Song details</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1 col-span-2 sm:col-span-1">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Movie / Album</label>
+            <input
+              value={movie}
+              onChange={e => setMovie(e.target.value)}
+              placeholder="e.g. Aashiqui 2"
+              className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Year</label>
+            <input
+              value={year}
+              onChange={e => setYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              placeholder="e.g. 1960"
+              inputMode="numeric"
+              className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Music director</label>
+          <input
+            value={musicDirector}
+            onChange={e => setMusicDirector(e.target.value)}
+            placeholder="e.g. Mithoon"
+            className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Lyricist</label>
+          <input
+            value={lyricist}
+            onChange={e => setLyricist(e.target.value)}
+            placeholder="e.g. Irshad Kamil"
+            className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+          />
+        </div>
       </div>
 
       {error && (

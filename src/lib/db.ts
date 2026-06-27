@@ -9,6 +9,9 @@ class LyricsDB extends Dexie {
     this.version(1).stores({
       songs: '++id, title, artist, language, createdAt, updatedAt',
     })
+    this.version(2).stores({
+      songs: '++id, title, artist, language, createdAt, updatedAt, movie, year, musicDirector, lyricist',
+    })
   }
 }
 

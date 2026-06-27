@@ -5,13 +5,17 @@ export type LyricsDisplay = 'original' | 'transliteration' | 'both'
 export interface Song {
   id?: number
   title: string
-  artist: string
+  artist: string          // singer(s)
   language: Language
   lyricsDisplay: LyricsDisplay
   lyrics: string          // line-separated original lyrics
   lyricsRoman?: string    // transliterated version (cached)
   credits?: string
   source?: string         // which source was chosen
+  movie?: string
+  year?: number
+  musicDirector?: string
+  lyricist?: string
   createdAt: number
   updatedAt: number
 }

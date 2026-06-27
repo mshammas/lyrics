@@ -25,7 +25,9 @@ export default function SongCard({ song, onDelete }: Props) {
         <Link href={songPath(song.id!, song.title)} className="block">
           <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{song.title}</p>
           <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-            {song.artist || 'Unknown artist'} · {lineCount} lines
+            {song.artist || 'Unknown artist'}
+            {song.movie && <> · {song.movie}{song.year ? ` (${song.year})` : ''}</>}
+            {!song.movie && <> · {lineCount} lines</>}
           </p>
         </Link>
       </div>

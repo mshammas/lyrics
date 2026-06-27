@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { db } from '@/lib/db'
-import type { Song } from '@/types'
+import type { Song, Language } from '@/types'
+import { LANGUAGE_LABELS } from '@/types'
 import SongCard from '@/components/dashboard/SongCard'
 
 export default function Dashboard() {
   const [songs, setSongs] = useState<Song[]>([])
   const [query, setQuery] = useState('')
+  const [langFilter, setLangFilter] = useState<Language | null>(null)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -80,12 +82,15 @@ export default function Dashboard() {
     e.target.value = ''
   }
 
-  const filtered = query.trim()
-    ? songs.filter(s =>
-        s.title.toLowerCase().includes(query.toLowerCase()) ||
-        s.artist.toLowerCase().includes(query.toLowerCase())
-      )
-    : songs
+  const activeLangs = Array.from(new Set(songs.map(s => s.language))) as Language[]
+
+  const filtered = songs.filter(s => {
+    if (langFilter && s.language !== langFilter) return false
+    if (!query.trim()) return true
+    const q = query.toLowerCase()
+    return [s.title, s.artist, s.movie, s.musicDirector, s.lyricist, s.credits]
+      .filter(Boolean).some(field => field!.toLowerCase().includes(q))
+  })
 
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col">
@@ -154,10 +159,38 @@ export default function Dashboard() {
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search songs or artists…"
+            placeholder="Search title, singer, movie, lyricist…"
             className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
           />
         </div>
+
+        {activeLangs.length > 1 && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setLangFilter(null)}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                langFilter === null
+                  ? 'bg-violet-600 text-white border-violet-600'
+                  : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'
+              }`}
+            >
+              All
+            </button>
+            {activeLangs.map(lang => (
+              <button
+                key={lang}
+                onClick={() => setLangFilter(l => l === lang ? null : lang)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  langFilter === lang
+                    ? 'bg-violet-600 text-white border-violet-600'
+                    : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'
+                }`}
+              >
+                {LANGUAGE_LABELS[lang]}
+              </button>
+            ))}
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-16 text-gray-400 text-sm">Loading…</div>
@@ -169,9 +202,9 @@ export default function Dashboard() {
               </svg>
             </div>
             <p className="text-gray-500 dark:text-gray-400 font-medium">
-              {query ? 'No songs match your search' : 'No songs yet'}
+              {query || langFilter ? 'No songs match your filters' : 'No songs yet'}
             </p>
-            {!query && (
+            {!query && !langFilter && (
               <Link href="/songs/new" className="text-sm text-violet-600 hover:text-violet-700 font-medium">
                 Add your first song →
               </Link>
