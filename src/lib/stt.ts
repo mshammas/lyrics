@@ -15,6 +15,7 @@ export interface STTOptions {
 
 export interface STTController {
   stop: () => void
+  setActiveIndex: (index: number) => void
 }
 
 // Minimal Web Speech API types (not in all TS DOM versions)
@@ -157,6 +158,11 @@ export function startSTT(
       stopped = true
       if (stallTimer) clearTimeout(stallTimer)
       rec.stop()
+    },
+    setActiveIndex: (index: number) => {
+      activeIndex = index
+      transcript = ''
+      cooldownUntil = 0
     },
   }
 }

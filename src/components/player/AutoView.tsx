@@ -9,6 +9,7 @@ interface Props {
   fontSize: number
   onFontChange: (n: number) => void
   onTap: () => void
+  onLineSelect: (index: number) => void
   showStallNudge: boolean
 }
 
@@ -29,7 +30,7 @@ function getFontScale(delta: number): number {
   return 0.93
 }
 
-export default function AutoView({ lines, activeIndex, fontSize, onFontChange, onTap, showStallNudge }: Props) {
+export default function AutoView({ lines, activeIndex, fontSize, onFontChange, onTap, onLineSelect, showStallNudge }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const activeRef = useRef<HTMLDivElement>(null)
   const isPinchingRef = usePinchZoom(containerRef, fontSize, onFontChange)
@@ -88,6 +89,10 @@ export default function AutoView({ lines, activeIndex, fontSize, onFontChange, o
               style={{
                 fontSize: `${fontSize * getFontScale(delta)}px`,
                 lineHeight: 1.65,
+              }}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (!isPinchingRef.current) onLineSelect(i)
               }}
             >
               {line || ' '}

@@ -66,6 +66,13 @@ export default function PlayerShell({ song }: Props) {
     resetStallTimer()
   }, [lines.length, resetStallTimer])
 
+  const selectLine = useCallback((index: number) => {
+    setActiveIndex(index)
+    setShowStallNudge(false)
+    resetStallTimer()
+    sttRef.current?.setActiveIndex(index)
+  }, [resetStallTimer])
+
   useEffect(() => {
     if (!autoMode) {
       sttRef.current?.stop()
@@ -219,6 +226,7 @@ export default function PlayerShell({ song }: Props) {
           fontSize={fontSize}
           onFontChange={changeFontSize}
           onTap={advanceLine}
+          onLineSelect={selectLine}
           showStallNudge={showStallNudge}
         />
       ) : (
