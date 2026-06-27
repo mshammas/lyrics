@@ -8,6 +8,8 @@ import type { STTController } from '@/lib/stt'
 import Toggle from '@/components/ui/Toggle'
 import NormalView from './NormalView'
 import AutoView from './AutoView'
+import { detectScript, nativeToRoman } from '@/lib/transliterate'
+import { db } from '@/lib/db'
 
 const STALL_MS = 10_000
 const MIN_FONT = 14
@@ -39,17 +41,38 @@ export default function PlayerShell({ song }: Props) {
   const [showTranslit, setShowTranslit] = useState(
     song.lyricsDisplay === 'transliteration'
   )
+  const [lyricsRomanOverride, setLyricsRomanOverride] = useState<string | null>(null)
 
   const sttRef = useRef<STTController | null>(null)
   const stallTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Detect songs saved with broken lyricsRoman (Devanagari stored instead of Roman)
+  // and silently regenerate using the fixed nativeToRoman.
+  useEffect(() => {
+    const lang = song.language
+    if (lang === 'en' || lang === 'other') return
+    const stored = song.lyricsRoman
+    if (!stored) return
+    if (detectScript(stored, lang) !== 'native') return // already Roman, fine
+
+    nativeToRoman(song.lyrics, lang).then(roman => {
+      if (!roman || !roman.trim()) return
+      setLyricsRomanOverride(roman)
+      if (song.id != null) {
+        db.songs.update(song.id, { lyricsRoman: roman }).catch(() => {/* silent */})
+      }
+    }).catch(() => {/* silent */})
+  }, [song.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const changeFontSize = useCallback((n: number) => {
     setFontSize(n)
     localStorage.setItem(getFontKey(song.id), String(n))
   }, [song.id])
 
+  const effectiveLyricsRoman = lyricsRomanOverride ?? song.lyricsRoman ?? null
+
   const lines = (() => {
-    const src = showTranslit && song.lyricsRoman ? song.lyricsRoman : song.lyrics
+    const src = showTranslit && effectiveLyricsRoman ? effectiveLyricsRoman : song.lyrics
     return src.split('\n')
   })()
 
@@ -113,7 +136,7 @@ export default function PlayerShell({ song }: Props) {
     }
   }, [autoMode]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasTranslit = !!song.lyricsRoman
+  const hasTranslit = !!effectiveLyricsRoman
 
   const darkHeader = autoMode
     ? 'border-white/8 bg-[#1a1a26]'

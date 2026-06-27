@@ -90,7 +90,7 @@ export async function romanToNative(
 export const transliterateLyrics = romanToNative
 
 /**
- * Convert native-script lyrics (Devanagari / Malayalam / Kannada) → Roman (ITRANS).
+ * Convert native-script lyrics (Devanagari / Malayalam / Kannada) → Roman.
  * Uses the Aksharamukha public API — free, no key needed.
  * Returns null if the language is unsupported or the API fails.
  */
@@ -101,21 +101,14 @@ export async function nativeToRoman(
   const src = NATIVE_SCRIPT[language]
   if (!src) return null
 
-  const lines = lyrics.split('\n')
   try {
-    const results = await Promise.all(
-      lines.map(async (line) => {
-        if (!line.trim()) return line
-        const url =
-          `https://aksharamukha.appspot.com/api/public` +
-          `?source=${encodeURIComponent(src)}&target=ITRANS` +
-          `&text=${encodeURIComponent(line)}`
-        const res = await fetch(url)
-        if (!res.ok) throw new Error('aksharamukha error')
-        return (await res.text()).trim()
-      })
-    )
-    return results.join('\n')
+    const url =
+      `https://aksharamukha.appspot.com/api/public` +
+      `?source=${encodeURIComponent(src)}&target=RomanColloquial` +
+      `&text=${encodeURIComponent(lyrics)}`
+    const res = await fetch(url)
+    if (!res.ok) return null
+    return (await res.text()).trim() || null
   } catch {
     return null
   }
