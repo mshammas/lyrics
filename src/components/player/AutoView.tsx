@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
+import { usePinchZoom } from '@/lib/use-pinch-zoom'
 
 interface Props {
   lines: string[]
   activeIndex: number
   fontSize: number
+  onFontChange: (n: number) => void
   onTap: () => void
   showStallNudge: boolean
 }
@@ -27,9 +29,10 @@ function getFontScale(delta: number): number {
   return 0.93
 }
 
-export default function AutoView({ lines, activeIndex, fontSize, onTap, showStallNudge }: Props) {
+export default function AutoView({ lines, activeIndex, fontSize, onFontChange, onTap, showStallNudge }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const activeRef = useRef<HTMLDivElement>(null)
+  const isPinchingRef = usePinchZoom(containerRef, fontSize, onFontChange)
 
   useEffect(() => {
     const container = containerRef.current
@@ -47,8 +50,8 @@ export default function AutoView({ lines, activeIndex, fontSize, onTap, showStal
   }, [activeIndex])
 
   const handleTap = useCallback(() => {
-    onTap()
-  }, [onTap])
+    if (!isPinchingRef.current) onTap()
+  }, [onTap, isPinchingRef])
 
   return (
     <div
@@ -89,7 +92,7 @@ export default function AutoView({ lines, activeIndex, fontSize, onTap, showStal
                 lineHeight: 1.65,
               }}
             >
-              {line || ' '}
+              {line || ' '}
             </div>
           )
         })}

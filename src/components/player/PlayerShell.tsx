@@ -217,11 +217,12 @@ export default function PlayerShell({ song }: Props) {
           lines={lines}
           activeIndex={activeIndex}
           fontSize={fontSize}
+          onFontChange={changeFontSize}
           onTap={advanceLine}
           showStallNudge={showStallNudge}
         />
       ) : (
-        <NormalView lines={lines} fontSize={fontSize} />
+        <NormalView lines={lines} fontSize={fontSize} onFontChange={changeFontSize} />
       )}
 
       {/* Credits + YouTube link — normal mode only, hidden in landscape */}
