@@ -11,7 +11,7 @@ export default function EditSongPage() {
   const [song, setSong] = useState<Song | null | undefined>(undefined)
 
   useEffect(() => {
-    db.songs.get(Number(id)).then(s => setSong(s ?? null))
+    db.songs.get(parseInt(id)).then(s => setSong(s ?? null))
   }, [id])
 
   if (song === undefined) {

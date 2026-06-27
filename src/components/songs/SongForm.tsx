@@ -7,7 +7,7 @@ import { detectScript, romanToNative } from '@/lib/transliterate'
 import LyricsVerify from './LyricsVerify'
 import SongPicker from './SongPicker'
 import type { Song, Language, LyricsDisplay, LyricsSource } from '@/types'
-import { LANGUAGE_LABELS } from '@/types'
+import { LANGUAGE_LABELS, songPath } from '@/types'
 import type { SongCandidate } from '@/app/api/songs/search/route'
 
 const LANGUAGES: Language[] = ['en', 'hi', 'ml', 'kn']
@@ -159,7 +159,7 @@ export default function SongForm({ song }: Props) {
           credits: credits.trim(),
           updatedAt: now,
         })
-        router.push(`/songs/${song.id}`)
+        router.push(songPath(song.id!, title.trim()))
       } else {
         const id = await db.songs.add({
           title: title.trim(),
@@ -172,7 +172,7 @@ export default function SongForm({ song }: Props) {
           createdAt: now,
           updatedAt: now,
         })
-        router.push(`/songs/${id}`)
+        router.push(songPath(id as number, title.trim()))
       }
     } catch {
       setError('Failed to save. Please try again.')

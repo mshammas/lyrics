@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { Song } from '@/types'
-import { LANGUAGE_BADGE } from '@/types'
+import { LANGUAGE_BADGE, songPath } from '@/types'
 
 const LANG_COLORS: Record<string, string> = {
   en: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
@@ -21,7 +21,7 @@ export default function SongCard({ song, onDelete }: Props) {
   return (
     <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex-1 min-w-0">
-        <Link href={`/songs/${song.id}`} className="block">
+        <Link href={songPath(song.id!, song.title)} className="block">
           <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{song.title}</p>
           <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
             {song.artist || 'Unknown artist'} · {lineCount} lines
@@ -32,7 +32,7 @@ export default function SongCard({ song, onDelete }: Props) {
         {LANGUAGE_BADGE[song.language]}
       </span>
       <Link
-        href={`/songs/${song.id}/edit`}
+        href={`${songPath(song.id!, song.title)}/edit`}
         className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         aria-label="Edit song"
       >
@@ -52,7 +52,7 @@ export default function SongCard({ song, onDelete }: Props) {
         </button>
       )}
       <Link
-        href={`/songs/${song.id}`}
+        href={songPath(song.id!, song.title)}
         className="p-1.5 text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
         aria-label="Open player"
       >

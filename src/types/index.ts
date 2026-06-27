@@ -44,3 +44,16 @@ export const LANGUAGE_BADGE: Record<Language, string> = {
   ml: 'ML',
   kn: 'KN',
 }
+
+export function slugify(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/[\s_]+/g, '-')
+    .replace(/-+/g, '-')
+}
+
+export function songPath(id: number, title: string): string {
+  return `/songs/${id}-${slugify(title)}`
+}
