@@ -219,19 +219,45 @@ export default function PlayerShell({ song }: Props) {
       )}
 
       {/* Lyrics area */}
-      {autoMode ? (
-        <AutoView
-          lines={lines}
-          activeIndex={activeIndex}
-          fontSize={fontSize}
-          onFontChange={changeFontSize}
-          onTap={advanceLine}
-          onLineSelect={selectLine}
-          showStallNudge={showStallNudge}
-        />
-      ) : (
-        <NormalView lines={lines} fontSize={fontSize} onFontChange={changeFontSize} />
-      )}
+      <div className="relative flex-1 flex flex-col min-h-0">
+        {autoMode ? (
+          <AutoView
+            lines={lines}
+            activeIndex={activeIndex}
+            fontSize={fontSize}
+            onFontChange={changeFontSize}
+            onTap={advanceLine}
+            onLineSelect={selectLine}
+            showStallNudge={showStallNudge}
+          />
+        ) : (
+          <NormalView lines={lines} fontSize={fontSize} onFontChange={changeFontSize} />
+        )}
+
+        {/* Floating zoom buttons */}
+        <div className="absolute bottom-4 right-3 z-20 flex flex-col gap-1.5 pointer-events-none">
+          {[
+            { label: '+', delta: 1, aria: 'Increase font size' },
+            { label: '−', delta: -1, aria: 'Decrease font size' },
+          ].map(({ label, delta, aria }) => (
+            <button
+              key={label}
+              onPointerDown={e => {
+                e.stopPropagation()
+                changeFontSize(Math.min(MAX_FONT, Math.max(MIN_FONT, fontSize + delta)))
+              }}
+              className={`pointer-events-auto w-8 h-8 rounded-full flex items-center justify-center text-base font-bold select-none active:scale-90 transition-transform ${
+                autoMode
+                  ? 'bg-white/10 text-white/50 hover:bg-white/20 hover:text-white'
+                  : 'bg-black/[0.07] text-gray-400 hover:bg-black/[0.12] hover:text-gray-700 dark:bg-white/10 dark:text-white/40 dark:hover:bg-white/20 dark:hover:text-white'
+              }`}
+              aria-label={aria}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Credits + YouTube link — normal mode only, hidden in landscape */}
       {!autoMode && (
