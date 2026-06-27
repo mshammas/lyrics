@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import type { Song } from '@/types'
@@ -10,6 +10,8 @@ export default function Dashboard() {
   const [songs, setSongs] = useState<Song[]>([])
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [toast, setToast] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     db.songs.orderBy('updatedAt').reverse().toArray().then(s => {
@@ -18,10 +20,64 @@ export default function Dashboard() {
     })
   }, [])
 
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3500)
+  }
+
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this song?')) return
     await db.songs.delete(id)
     setSongs(s => s.filter(song => song.id !== id))
+  }
+
+  const handleExport = async () => {
+    const all = await db.songs.toArray()
+    // Strip device-specific id before exporting
+    const data = all.map(({ id: _id, ...rest }) => rest)
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `lyrics-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const imported: Omit<Song, 'id'>[] = JSON.parse(await file.text())
+      if (!Array.isArray(imported)) throw new Error()
+
+      const existing = await db.songs.toArray()
+      const existingKeys = new Set(
+        existing.map(s => `${s.title.toLowerCase()}|${s.artist.toLowerCase()}`)
+      )
+
+      const now = Date.now()
+      const toAdd = imported
+        .filter(s => s.title && s.lyrics)
+        .filter(s => !existingKeys.has(`${s.title.toLowerCase()}|${s.artist.toLowerCase()}`))
+        .map(s => ({ ...s, createdAt: s.createdAt ?? now, updatedAt: s.updatedAt ?? now }))
+
+      if (toAdd.length > 0) {
+        await db.songs.bulkAdd(toAdd)
+        const updated = await db.songs.orderBy('updatedAt').reverse().toArray()
+        setSongs(updated)
+      }
+
+      const skipped = imported.length - toAdd.length
+      showToast(
+        toAdd.length > 0
+          ? `Imported ${toAdd.length} song${toAdd.length !== 1 ? 's' : ''}${skipped > 0 ? `, ${skipped} already existed` : ''}.`
+          : `All ${skipped} song${skipped !== 1 ? 's' : ''} already exist — nothing added.`
+      )
+    } catch {
+      showToast('Import failed — make sure the file is a valid lyrics backup.')
+    }
+    e.target.value = ''
   }
 
   const filtered = query.trim()
@@ -39,17 +95,56 @@ export default function Dashboard() {
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">My songs</h1>
             <p className="text-sm text-gray-400">{songs.length} {songs.length === 1 ? 'song' : 'songs'}</p>
           </div>
-          <Link
-            href="/songs/new"
-            className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add song
-          </Link>
+          <div className="flex items-center gap-2">
+            {/* Export */}
+            <button
+              onClick={handleExport}
+              disabled={songs.length === 0}
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-30"
+              title="Export songs to file"
+              aria-label="Export songs"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+              </svg>
+            </button>
+            {/* Import */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              title="Import songs from file"
+              aria-label="Import songs"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 8l5-5 5 5M12 3v12" />
+              </svg>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={handleImport}
+            />
+            <Link
+              href="/songs/new"
+              className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add song
+            </Link>
+          </div>
         </div>
       </header>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm px-4 py-2.5 rounded-full shadow-lg animate-fade-in">
+          {toast}
+        </div>
+      )}
 
       <main className="flex-1 max-w-xl mx-auto w-full px-4 py-4 space-y-3">
         <div className="relative">
