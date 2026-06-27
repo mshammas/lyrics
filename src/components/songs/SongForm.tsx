@@ -43,6 +43,8 @@ export default function SongForm({ song }: Props) {
   const [saving, setSaving] = useState(false)
   const [savingStep, setSavingStep] = useState('')
   const [error, setError] = useState('')
+  const [scrapeUrl, setScrapeUrl] = useState('')
+  const [scraping, setScraping] = useState(false)
 
   const scriptType = lyrics.trim() && language !== 'en' && language !== 'other'
     ? detectScript(lyrics, language)
@@ -117,6 +119,32 @@ export default function SongForm({ song }: Props) {
     setShowVerify(false)
     setSources([])
   }
+
+  const handleScrape = useCallback(async () => {
+    if (!scrapeUrl.trim()) return
+    setScraping(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/lyrics/scrape?url=${encodeURIComponent(scrapeUrl.trim())}`)
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error ?? 'Could not extract lyrics from that page.')
+        return
+      }
+      if (data.lyrics) setLyrics(data.lyrics)
+      if (data.artist && !artist.trim()) setArtist(data.artist)
+      if (data.movie) setMovie(data.movie)
+      if (data.year) setYear(String(data.year))
+      if (data.musicDirector) setMusicDirector(data.musicDirector)
+      if (data.lyricist) setLyricist(data.lyricist)
+      setScrapeUrl('')
+      setError('')
+    } catch {
+      setError('Failed to fetch from URL. Check your connection.')
+    } finally {
+      setScraping(false)
+    }
+  }, [scrapeUrl, artist])
 
   const handleSave = async () => {
     if (!title.trim()) { setError('Title is required.'); return }
@@ -372,10 +400,10 @@ export default function SongForm({ song }: Props) {
       </div>
 
       {error && (
-        <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg space-y-1.5">
+        <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg space-y-2">
           <p>{error}</p>
           {error.startsWith('No lyrics found') && title && (
-            <div className="flex flex-wrap gap-2 pt-0.5">
+            <div className="flex flex-wrap gap-2">
               <a
                 href={`https://www.google.com/search?q=${encodeURIComponent(`${title}${artist ? ' ' + artist : ''} lyrics`)}`}
                 target="_blank"
@@ -392,6 +420,32 @@ export default function SongForm({ song }: Props) {
               >
                 Search Genius →
               </a>
+            </div>
+          )}
+          {/* URL scraper — shown for any "not found" error once title is set */}
+          {title && (
+            <div className="pt-1 space-y-1.5 border-t border-red-200 dark:border-red-800">
+              <p className="text-xs text-red-400 dark:text-red-500">
+                Found a page with the lyrics? Paste its URL and we&apos;ll extract everything automatically.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={scrapeUrl}
+                  onChange={e => setScrapeUrl(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleScrape()}
+                  placeholder="https://…"
+                  className="flex-1 text-xs rounded-lg border border-red-200 dark:border-red-700 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500 placeholder-gray-400"
+                />
+                <button
+                  type="button"
+                  onClick={handleScrape}
+                  disabled={!scrapeUrl.trim() || scraping}
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-violet-600 text-white font-medium disabled:opacity-50 hover:bg-violet-700 transition-colors"
+                >
+                  {scraping ? 'Fetching…' : 'Fetch'}
+                </button>
+              </div>
             </div>
           )}
         </div>
