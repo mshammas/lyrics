@@ -1,8 +1,8 @@
 /**
- * Transliteration via Google Input Tools API (free, no key needed).
+ * Transliteration helpers (both directions).
  *
- * Direction: Roman → native script (hi/ml/kn).
- * e.g. "tum hi ho" + hi → "तुम ही हो"
+ * Roman → Native: Google Input Tools API (free, no key)
+ * Native → Roman: Aksharamukha public API (free, no key)
  */
 import type { Language } from '@/types'
 
@@ -15,6 +15,13 @@ const ITCODE: Record<Language, string | null> = {
   ml: 'ml-t-i0-und',
   kn: 'kn-t-i0-und',
   other: null,
+}
+
+// Aksharamukha source-script identifiers for native → Roman
+const NATIVE_SCRIPT: Partial<Record<Language, string>> = {
+  hi: 'Devanagari',
+  ml: 'Malayalam',
+  kn: 'Kannada',
 }
 
 // Unicode ranges for each script
@@ -81,3 +88,35 @@ export async function romanToNative(
  * @deprecated Use romanToNative directly.
  */
 export const transliterateLyrics = romanToNative
+
+/**
+ * Convert native-script lyrics (Devanagari / Malayalam / Kannada) → Roman (ITRANS).
+ * Uses the Aksharamukha public API — free, no key needed.
+ * Returns null if the language is unsupported or the API fails.
+ */
+export async function nativeToRoman(
+  lyrics: string,
+  language: Language
+): Promise<string | null> {
+  const src = NATIVE_SCRIPT[language]
+  if (!src) return null
+
+  const lines = lyrics.split('\n')
+  try {
+    const results = await Promise.all(
+      lines.map(async (line) => {
+        if (!line.trim()) return line
+        const url =
+          `https://aksharamukha.appspot.com/api/public` +
+          `?source=${encodeURIComponent(src)}&target=ITRANS` +
+          `&text=${encodeURIComponent(line)}`
+        const res = await fetch(url)
+        if (!res.ok) throw new Error('aksharamukha error')
+        return (await res.text()).trim()
+      })
+    )
+    return results.join('\n')
+  } catch {
+    return null
+  }
+}

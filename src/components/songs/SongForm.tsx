@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { db } from '@/lib/db'
-import { detectScript, romanToNative } from '@/lib/transliterate'
+import { detectScript, romanToNative, nativeToRoman } from '@/lib/transliterate'
 import LyricsVerify from './LyricsVerify'
 import SongPicker from './SongPicker'
 import type { Song, Language, LyricsDisplay, LyricsSource } from '@/types'
@@ -139,10 +139,10 @@ export default function SongForm({ song }: Props) {
           // If conversion failed keep roman as both — still usable for STT
         } else {
           // Lyrics are already in native script.
-          // Generate Roman transliteration for STT matching.
+          // Generate Roman transliteration for the script toggle and STT.
           setSavingStep('Generating transliteration…')
-          // For native → roman we don't have a direct API yet,
-          // so lyricsRoman stays undefined (STT will still work against native).
+          const roman = await nativeToRoman(finalLyrics, language).catch(() => null)
+          if (roman && roman.trim()) lyricsRoman = roman
         }
       }
 

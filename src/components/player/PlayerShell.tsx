@@ -113,7 +113,7 @@ export default function PlayerShell({ song }: Props) {
     }
   }, [autoMode]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasTranslit = !!song.lyricsRoman && song.language !== 'en' && song.language !== 'other'
+  const hasTranslit = !!song.lyricsRoman
 
   const darkHeader = autoMode
     ? 'border-white/8 bg-[#1a1a26]'
@@ -155,9 +155,9 @@ export default function PlayerShell({ song }: Props) {
                   ? 'border-white/20 text-white/50 hover:text-white/80'
                   : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-violet-400'
               }`}
-              title={showTranslit ? 'Switch to original script' : 'Switch to transliteration'}
+              title={showTranslit ? 'Switch to original script' : 'Switch to Roman'}
             >
-              {showTranslit ? 'A→अ' : 'अ→A'}
+              {showTranslit ? 'Native' : 'Roman'}
             </button>
           )}
           <button
